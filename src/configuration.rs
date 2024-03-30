@@ -64,17 +64,13 @@ pub fn get_configuration() -> Result<Setting, config::ConfigError> {
 pub enum Environment {
   Local,
   Production,
-  Staging,
-  Development,
 }
 
 impl Environment {
-  pub fn as_str(&self) -> &str {
+  pub fn as_str(&self) -> &'static str {
     match self {
       Environment::Local => "local",
       Environment::Production => "production",
-      Environment::Staging => "staging",
-      Environment::Development => "development",
     }
   }
 }
@@ -82,13 +78,14 @@ impl Environment {
 impl TryFrom<String> for Environment {
   type Error = String;
 
-  fn try_from(value: String) -> Result<Self, Self::Error> {
-    match value.to_lowercase().as_str() {
-      "local" => Ok(Environment::Local),
-      "production" => Ok(Environment::Production),
-      "staging" => Ok(Environment::Staging),
-      "development" => Ok(Environment::Development),
-      _ => Err(format!("{} is not a valid environment.", value)),
+  fn try_from(s: String) -> Result<Self, Self::Error> {
+    match s.to_lowercase().as_str() {
+      "local" => Ok(Self::Local),
+      "production" => Ok(Self::Production),
+      other => Err(format!(
+        "{} is not a supported environment. Use either 'local' or 'production'.",
+        other
+      ))
     }
   }
 }

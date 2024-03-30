@@ -1,4 +1,7 @@
 {
   "cSpell.words": ["actix", "chrono", "sqlx"],
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "rust-analyzer.linkedProjects": [
+    "./Cargo.toml"
+  ]
 }
