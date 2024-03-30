@@ -1,8 +1,16 @@
 use secrecy::{ExposeSecret, Secret};
+
+
 #[derive(serde::Deserialize)]
 pub struct Setting {
   pub database: DatabaseSettings,
-  pub application_port: u16,
+  pub application: ApplicationSettings,
+}
+
+#[derive(serde::Deserialize)]
+pub struct ApplicationSettings {
+  pub host: String,
+pub port: u16
 }
 
 #[derive(serde::Deserialize)]
@@ -31,14 +39,56 @@ impl DatabaseSettings {
 }
 
 pub fn get_configuration() -> Result<Setting, config::ConfigError> {
-  // 설정을 읽는다.
+  let base_path = std::env::current_dir().expect("Failed to determine the current directory.");
+  let configuration_diction = base_path.join("configuration");
+
+  let environment: Environment = std::env::var("APP_ENVIRONMENT")
+    .unwrap_or_else(|_| "local".into())
+    .try_into()
+    .expect("Failed to parse APP_ENVIRONMENT.");
+
+  let environment_filename = format!("{}.yaml", environment.as_str());
+
   let settings = config::Config::builder()
   .add_source(
-    config::File::new("configuration.yaml", config::FileFormat::Yaml)
+    config::File::from(configuration_diction.join("base.yaml"))
+  )
+  .add_source(
+    config::File::from(configuration_diction.join(environment_filename))
   )
   .build()?;
 
-  // 읽은 설정값을 Settings 타입으로 변환한다.
   settings.try_deserialize::<Setting>()
 }
 
+pub enum Environment {
+  Local,
+  Production,
+  Staging,
+  Development,
+}
+
+impl Environment {
+  pub fn as_str(&self) -> &str {
+    match self {
+      Environment::Local => "local",
+      Environment::Production => "production",
+      Environment::Staging => "staging",
+      Environment::Development => "development",
+    }
+  }
+}
+
+impl TryFrom<String> for Environment {
+  type Error = String;
+
+  fn try_from(value: String) -> Result<Self, Self::Error> {
+    match value.to_lowercase().as_str() {
+      "local" => Ok(Environment::Local),
+      "production" => Ok(Environment::Production),
+      "staging" => Ok(Environment::Staging),
+      "development" => Ok(Environment::Development),
+      _ => Err(format!("{} is not a valid environment.", value)),
+    }
+  }
+}
